@@ -19,11 +19,13 @@ http.createServer((req, res) => {
             }
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             if (usuarioRegistrado(nodo)) {
-                console.log(1);
+                console.log('Ha intentado ingresar al chat un usuario con un nombre repetido.');
                 res.end('Nombre de usuario ya registrado');
             } else {
+                console.log(q.username + ' ha ingresado al chat.');
                 res.end(JSON.stringify(activeNodes)); // Send the array as a string
                 activeNodes.push(nodo); // Agregamos el nuevo nodo a la BD del servidor
+                console.log(activeNodes);
             }
         }
     }

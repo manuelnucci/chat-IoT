@@ -6,11 +6,11 @@ const readline_sync = require('readline-sync');
 
 const USERNAME = readline_sync.question('Ingrese nombre de usuario: ');
 username = encodeURIComponent(USERNAME);
-const IP_ADDRESS = '127.0.0.1'; // ip.address();
-const IP_HTTP_SERVER = '127.0.0.1'; // ip.address();
+const IP_ADDRESS = ip.address(); // '127.0.0.1';
+const IP_HTTP_SERVER = ip.address(); // '127.0.0.1';
 const PORT_HTTP_SERVER = 8080;
 const PORT_TCP_SERVER = 8081;
-const PORT_TCP_CLIENT = 8082;
+const PORT_TCP_CLIENT = 8084;
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -119,7 +119,7 @@ http.get(registration, (res) => { // Registro con el servidor
                 });
 
                 client.on('error', (err) => {
-                    console.log(err);
+                    // console.log(err);
                 });
             });
         }
