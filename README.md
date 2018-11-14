@@ -1,1 +1,1 @@
-# chat-IoT
+# Chat + Chatbot (IoT - WeMos D1)
