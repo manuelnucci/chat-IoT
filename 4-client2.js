@@ -20,6 +20,7 @@ const rl = readline.createInterface({
 var offset = Number.MAX_VALUE;
 
 var activeNodes = new Array();
+var sockets = new Array();
 
 const clientTCP = net.createConnection(PORT_TCP_SERVER, IP_HTTP_SERVER, () => { // Sincronización con el servidor
     var i = 10;
@@ -79,14 +80,11 @@ http.get(registration, (res) => { // Registro con el servidor
                 client.write(JSON.stringify(json));
             });
 
+            sockets.push(client);
+
             client.on('data', (data) => {
                 var mensaje = JSON.parse(data.toString());
-                receivers = mensaje.to.split(',');
-                if (receivers.includes('all') || receivers.includes(username)) {
-                    var time = parseInt(mensaje.timestamp) - parseInt(mensaje.offset);
-                    console.log(time);
-                    console.log('[' + msToTime(time) + '] ' + mensaje.from + ': ' + mensaje.message);
-                }
+                mostrarMensaje(mensaje);
             });
 
             client.on('close', () => {
@@ -101,46 +99,20 @@ http.get(registration, (res) => { // Registro con el servidor
             client.on('error', (err) => {
                 console.log(err);
             });
-
-            rl.on('line', (cad) => {
-                var line = cad.split('@');
-                var to;
-                var mensaje = line[0];
-                if (line.length == 1) { // El mensaje es a todos, no hubo un @
-                    to = 'all';
-                } else {
-                    to = '';
-                    for (i = 1; i < line.length; i++) {
-                        to += line[i] + ',';
-                    }
-                }
-                var json = {
-                    from: username,
-                    to: to,
-                    message: mensaje,
-                    timestamp: new Date().getTime(),
-                    offset: offset
-                };
-                client.write(JSON.stringify(json));
-            });
         }
     });
 });
 
 const server = net.createServer(function (socket) {
+    sockets.push(socket);
+
     socket.on('data', function (data) {
         var mensaje = JSON.parse(data.toString());
         if (mensaje.hasOwnProperty('username')) {
             activeNodes.push(mensaje);
             console.log(mensaje.username + ' se ha conectado.')
-        } else {
-            receivers = mensaje.to.split(',');
-            if (receivers.includes('all') || receivers.includes(username)) {
-                var time = parseInt(mensaje.timestamp) - parseInt(mensaje.offset);
-                console.log(time);
-                console.log('[' + msToTime(time) + '] ' + mensaje.from + ': ' + mensaje.message);
-            }
-        }
+        } else 
+            mostrarMensaje(mensaje);
     });
 
     socket.on('end', () => {
@@ -149,28 +121,6 @@ const server = net.createServer(function (socket) {
 
     socket.on('error', (err) => {
         console.log(err);
-    });
-
-    rl.on('line', (cad) => {
-        var line = cad.split('@');
-        var to;
-        var mensaje = line[0];
-        if (line.length == 1) { // El mensaje es a todos, no hubo un @
-            to = 'all';
-        } else {
-            to = '';
-            for (i = 1; i < line.length; i++) {
-                to += line[i] + ',';
-            }
-        }
-        var json = {
-            from: username,
-            to: to,
-            message: mensaje,
-            timestamp: new Date().getTime(),
-            offset: offset
-        };
-        socket.write(JSON.stringify(json));
     });
 }).listen(PORT_TCP_CLIENT);
 
@@ -181,6 +131,39 @@ server.on('close', () => {
 server.on('error', (err) => {
     console.log(err);
 });
+
+rl.on('line', (cad) => {
+    var line = cad.split('@');
+    var to;
+    var mensaje = line[0];
+    if (line.length == 1) { // El mensaje es a todos, no hubo un @
+        to = 'all';
+    } else {
+        to = '';
+        for (i = 1; i < line.length; i++) {
+            to += line[i] + ',';
+        }
+    }
+    var json = {
+        from: username,
+        to: to,
+        message: mensaje,
+        timestamp: new Date().getTime(),
+        offset: offset
+    };
+
+    sockets.forEach((socket) => {
+        socket.write(JSON.stringify(json));
+    ;})
+});
+
+function mostrarMensaje(mensaje) {
+    receivers = mensaje.to.split(',');
+    if (receivers.includes('all') || receivers.includes(username)) {
+        var time = parseInt(mensaje.timestamp) - parseInt(mensaje.offset);
+        console.log('[' + msToTime(time) + '] ' + mensaje.from + ': ' + mensaje.message);
+    }
+}
 
 function msToTime(s) {
     // Pad to 2 or 3 digits, default is 2
