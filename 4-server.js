@@ -33,8 +33,8 @@ http.createServer((req, res) => {
 
 const serverNTP = net.createServer(function (socket) {
     socket.on('data', (t1) => {
-        var T2 = now('milli'); // Tiempo de arribo del mensaje del cliente
-        var T3 = now('milli'); // Tiempo de envío del mensaje del servidor
+        var T2 = new Date().getTime(); // Tiempo de arribo del mensaje del cliente
+        var T3 = new Date().getTime(); // Tiempo de envío del mensaje del servidor
         socket.write(t1 + ',' + T2 + ',' + T3);
     });
 
@@ -64,18 +64,3 @@ function usuarioRegistrado(nodo) {
         i++;
     return i < activeNodes.length;
 }
-
-const now = (unit) => {
-    const hrTime = process.hrtime();
-    
-    switch (unit) {
-        case 'milli':
-            return hrTime[0] * 1000 + hrTime[1] / 1000000;
-        case 'micro':
-            return hrTime[0] * 1000000 + hrTime[1] / 1000;
-        case 'nano':
-            return hrTime[0] * 1000000000 + hrTime[1];
-        default:
-            return hrTime[0] * 1000000000 + hrTime[1];
-    }
-};
