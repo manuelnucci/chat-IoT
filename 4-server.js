@@ -38,8 +38,12 @@ const serverNTP = net.createServer(function (socket) {
         socket.write(t1 + ',' + T2 + ',' + T3);
     });
 
+    socket.on('end', function () {
+        console.log('[' + new Date().toLocaleTimeString() + '] El cliente se ha desconectado del servidor NTP.');
+    }.bind({ socket: socket }));
+
     socket.on('close', () => {
-        console.log('[' + new Date().toLocaleTimeString() + '] El cliente se ha desconectado del servidor NTP.')
+        // La conexión TCP se cerró correctamente.
     });
     
     socket.on('error', (err) => {

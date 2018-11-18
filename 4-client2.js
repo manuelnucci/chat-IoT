@@ -87,16 +87,26 @@ http.get(registration, (res) => { // Registro con el servidor
                 mostrarMensaje(mensaje);
             });
 
-            client.on('close', () => {
-                console.log('Entro al close de client...')
+            client.on('end', function () { // El nodo par me envía un FIN packet indicando que se desconectará
+                console.log(this.username + " se ha desconectado.");
                 var i = 0;
-                while (i < activeNodes.length && activeNodes[i].ip != nodo.ip && activeNodes[i].port != nodo.port)
-                    i++
+                while (i < activeNodes.length && activeNodes[i].username != this.username)
+                    i++;
                 if (i < activeNodes.length)
                     activeNodes.splice(i, 1);
+                i = 0;
+                while (i < sockets.length && sockets[i] != this.client)
+                    i++;
+                if (i < sockets.length)
+                    sockets.splice(i, 1);
+                console.log(sockets);
+            }.bind({ username: activeNodes[i].username, socket: client }));
+
+            client.on('close', () => {
+                // La conexión TCP se cerró correctamente.
             });
 
-            client.on('error', (err) => {
+            client.on('error', (err) => { // Deberíamos mejorar este evento que es emitido cuando el otro nodo crashea
                 console.log(err);
             });
         }
@@ -110,21 +120,34 @@ const server = net.createServer(function (socket) {
         var mensaje = JSON.parse(data.toString());
         if (mensaje.hasOwnProperty('username')) {
             activeNodes.push(mensaje);
-            console.log(mensaje.username + ' se ha conectado.')
-        } else 
+            console.log(mensaje.username + " se ha conectado.");
+        } else
             mostrarMensaje(mensaje);
     });
 
-    socket.on('end', () => {
-        console.log('Se ha desconectado un cliente.')
+    socket.on('end', function () { // El nodo par me envía un FIN packet indicando que se desconectará
+        var i = 0;
+        while (i < sockets.length && sockets[i] != this.socket)
+            i++;
+        if (i < socket.length)
+            socket.splice(i, 1);
+        console.log("Un usuario se ha desconectado.");
+        console.log("Me arriesgué a borrar el nodo activo con el índice i.")
+        activeNodes.splice(i, 1);
+        console.log(activeNodes);
+        console.log(sockets);
+    }.bind({ socket: socket }));
+
+    socket.on('close', () => {
+        // La conexión TCP se cerró correctamente.
     });
 
-    socket.on('error', (err) => {
+    socket.on('error', (err) => { // Deberíamos mejorar este evento que es emitido cuando el otro nodo crashea
         console.log(err);
     });
 }).listen(PORT_TCP_CLIENT);
 
-server.on('close', () => {
+server.on('close', () => { // Evento emitido cuando el servidor cierra y sólo si no hay conexiones existentes
     console.log('Usted se ha desconectado del chat.');
 });
 
@@ -136,25 +159,32 @@ rl.on('line', (cad) => {
     var line = cad.split('@');
     var to;
     var mensaje = line[0];
-    if (line.length == 1) { // El mensaje es a todos, no hubo un @
-        to = 'all';
+    if (mensaje == "exit") {
+        sockets.forEach((socket) => {
+            socket.end();
+        });
+        clientTCP.end(); // Cerramos la comunicación TCP con el servidor NTP
     } else {
-        to = '';
-        for (i = 1; i < line.length; i++) {
-            to += line[i] + ',';
+        if (line.length == 1) { // El mensaje es a todos, no hubo un @
+            to = 'all';
+        } else {
+            to = '';
+            for (i = 1; i < line.length; i++) {
+                to += line[i] + ',';
+            }
         }
-    }
-    var json = {
-        from: username,
-        to: to,
-        message: mensaje,
-        timestamp: new Date().getTime(),
-        offset: offset
-    };
+        var json = {
+            from: username,
+            to: to,
+            message: mensaje,
+            timestamp: new Date().getTime(),
+            offset: offset
+        };
 
-    sockets.forEach((socket) => {
-        socket.write(JSON.stringify(json));
-    ;})
+        sockets.forEach((socket) => {
+            socket.write(JSON.stringify(json));
+        });
+    }
 });
 
 function mostrarMensaje(mensaje) {
