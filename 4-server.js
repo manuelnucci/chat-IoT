@@ -20,7 +20,7 @@ http.createServer((req, res) => {
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             if (usuarioRegistrado(nodo)) {
                 console.log('Ha intentado ingresar al chat un usuario con un nombre repetido.');
-                res.end('Nombre de usuario ya registrado');
+                res.end('Nombre de usuario ya registrado.');
             } else {
                 console.log(q.username + ' ha ingresado al chat.');
                 res.end(JSON.stringify(activeNodes)); // Send the array as a string
@@ -32,20 +32,37 @@ http.createServer((req, res) => {
 }).listen(PORT_HTTP);
 
 const serverNTP = net.createServer(function (socket) {
-    socket.on('data', (t1) => {
+    socket.on('data', function (t1) {
+        var ip = this.socket.address();
+        console.log(ip);
+        var port = this.socket.address().port;
+        console.log(port);
         var T2 = new Date().getTime(); // Tiempo de arribo del mensaje del cliente
         var T3 = new Date().getTime(); // Tiempo de envío del mensaje del servidor
         socket.write(t1 + ',' + T2 + ',' + T3);
-    });
+    }.bind({ socket }));
 
     socket.on('end', function () {
-        console.log('[' + new Date().toLocaleTimeString() + '] El cliente se ha desconectado del servidor NTP.');
-    }.bind({ socket: socket }));
+        var ip = this.socket.remoteAddress;
+        console.log(ip);
+        var port = this.socket.remotePort;
+        console.log(port);
+        var username = activeNodes.find((nodo, index) => {
+            if (nodo.ip == ip && nodo.port == port) {
+                console.log('bdasd');
+                let res = nodo.username;
+                activeNodes.splice(index, 1);
+                return res;
+            }
+        });
+        console.log(activeNodes);
+        console.log('[' + new Date().toLocaleTimeString() + '] El usuario ' + username + ' se ha desconectado del servidor NTP.');
+    }.bind({ socket }));
 
     socket.on('close', () => {
         // La conexión TCP se cerró correctamente.
     });
-    
+
     socket.on('error', (err) => {
         // console.log(err);
     });

@@ -53,8 +53,7 @@ clientTCP.on('error', function (err) {
     console.log(err);
 });
 
-var registration = 'http://' + IP_HTTP_SERVER + ':' + PORT_HTTP_SERVER + '/register?username=' + username +
-    '&ip=' + IP_ADDRESS + '&port=' + PORT_TCP_CLIENT;
+var registration = `http://${IP_HTTP_SERVER}:${PORT_HTTP_SERVER}/register?username=${username}&ip=${IP_ADDRESS}&port=${PORT_TCP_CLIENT}`;
 
 http.get(registration, (res) => { // Registro con el servidor
     let body = '';
@@ -198,3 +197,4 @@ function msToTime(s) {
     var pad = (n, z = 2) => ('00' + n).slice(-z);
     return new Date().getHours() + ':' + pad((s % 3.6e6) / 6e4 | 0) + ':' + pad((s % 6e4) / 1000 | 0) + '.' + pad(s % 1000, 3);
 }
+

@@ -7,10 +7,10 @@ const readline_sync = require('readline-sync');
 const USERNAME = readline_sync.question('Ingrese nombre de usuario: ');
 username = encodeURIComponent(USERNAME);
 const IP_ADDRESS = ip.address();
-const IP_HTTP_SERVER = ip.address();
+const IP_HTTP_SERVER = '10.9.10.205';
 const PORT_HTTP_SERVER = 8080;
 const PORT_TCP_SERVER = 8081;
-const PORT_TCP_CLIENT = 8084;
+const PORT_TCP_CLIENT = 8082;
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -53,8 +53,7 @@ clientTCP.on('error', function (err) {
     console.log(err);
 });
 
-var registration = 'http://' + IP_HTTP_SERVER + ':' + PORT_HTTP_SERVER + '/register?username=' + username +
-    '&ip=' + IP_ADDRESS + '&port=' + PORT_TCP_CLIENT;
+var registration = `http://${IP_HTTP_SERVER}:${PORT_HTTP_SERVER}/register?username=${username}&ip=${IP_ADDRESS}&port=${PORT_TCP_CLIENT}`;
 
 http.get(registration, (res) => { // Registro con el servidor
     let body = '';
@@ -99,7 +98,6 @@ http.get(registration, (res) => { // Registro con el servidor
                     i++;
                 if (i < sockets.length)
                     sockets.splice(i, 1);
-                console.log(sockets);
             }.bind({ username: activeNodes[i].username, socket: client }));
 
             client.on('close', () => {
@@ -135,7 +133,6 @@ const server = net.createServer(function (socket) {
         console.log("Me arriesgué a borrar el nodo activo con el índice i.")
         activeNodes.splice(i, 1);
         console.log(activeNodes);
-        console.log(sockets);
     }.bind({ socket: socket }));
 
     socket.on('close', () => {
@@ -200,3 +197,4 @@ function msToTime(s) {
     var pad = (n, z = 2) => ('00' + n).slice(-z);
     return new Date().getHours() + ':' + pad((s % 3.6e6) / 6e4 | 0) + ':' + pad((s % 6e4) / 1000 | 0) + '.' + pad(s % 1000, 3);
 }
+
