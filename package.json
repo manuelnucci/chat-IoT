@@ -1,0 +1,27 @@
+{
+  "name": "chat-iot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "ip": "^1.1.5",
+    "mqtt": "^2.18.8",
+    "readline-sync": "^1.4.9"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Manuxi777/chat-IoT.git"
+  },
+  "author": "Ema - Manu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Manuxi777/chat-IoT/issues"
+  },
+  "homepage": "https://github.com/Manuxi777/chat-IoT#readme"
+}
