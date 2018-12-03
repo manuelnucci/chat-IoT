@@ -2,13 +2,12 @@ const http = require('http');
 const net = require('net');
 const ip = require('ip');
 const mqtt = require('mqtt');
-const readline = require('readline');
 const readline_sync = require('readline-sync');
 const events = require('events');
 const eventEmitter = new events.EventEmitter();
 
 const IP_ADDRESS = ip.address();
-const IP_HTTP_SERVER = '192.168.1.33';
+const IP_HTTP_SERVER = '10.9.10.206';
 const PORT_HTTP_SERVER = 8085;
 const PORT_TCP_SERVER = 8081;
 const PORT_TCP_CLIENT = 8082;
@@ -30,13 +29,13 @@ const UB_SALA4 = 1;
 const UB_EXTERIOR = 2;
 const UB_PASILLO = 3;
 
-var temperaturas = [{ temp_valor: undefined, temp_tiempo: undefined, temp_ubicacion: undefined },
-{ temp_valor: undefined, temp_tiempo: undefined },
-{ temp_valor: undefined, temp_tiempo: undefined },
-{ temp_valor: undefined, temp_tiempo: undefined }];
+var temperaturas = [{ temp_valor: "no registrada", temp_tiempo: "no registrada", temp_ubicacion: "no registrada" },
+    { temp_valor: "no registrada", temp_tiempo: "no registrada" },
+    { temp_valor: "no registrada", temp_tiempo: "no registrada" },
+    { temp_valor: "no registrada", temp_tiempo: "no registrada" }];
 
 var username = encodeURIComponent(readline_sync.question('Ingrese nombre de usuario: '));
-var rl;
+// var rl;
 var offset = Number.MAX_VALUE;
 var connections = new Map();
 var flag_exit = false;
@@ -106,17 +105,27 @@ clientmqtt.on('connect', () => {
 clientmqtt.on('message', (topic, message) => {
     // message is Buffer
     message = JSON.parse(message.toString());
+    var new_timestamp = msToTime(Date.now() - offset)
     if (topic == TOP_SALA4_TEMP) {
         temperaturas[UB_SALA4].temp_valor = message.valor;
-        temperaturas[UB_SALA4].temp_tiempo = msToTime(message.timestamp);
+        temperaturas[UB_SALA4].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_valor = message.valor;
+        temperaturas[UB_CUALQUIERA].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_ubicacion = "sala4";
         // console.log("-Topico:" + topic + " -Temperatura:" + temperaturas[UB_SALA4].temp_valor + " Tiempo:" + temperaturas[UB_SALA4].temp_tiempo);
     } else if (topic == TOP_EXT_TEMP) {
         temperaturas[UB_EXTERIOR].temp_valor = message.valor;
-        temperaturas[UB_EXTERIOR].temp_tiempo = msToTime(message.timestamp);
+        temperaturas[UB_EXTERIOR].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_valor = message.valor;
+        temperaturas[UB_CUALQUIERA].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_ubicacion = "exterior";
         // console.log("-Topico:" + topic + " -Temperatura:" + temperaturas[UB_EXTERIOR].temp_valor + " Tiempo:" + temperaturas[UB_EXTERIOR].temp_tiempo);
     } else if (topic == TOP_PAS_TEMP) {
         temperaturas[UB_PASILLO].temp_valor = message.valor;
-        temperaturas[UB_PASILLO].temp_tiempo = msToTime(message.timestamp);
+        temperaturas[UB_PASILLO].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_valor = message.valor;
+        temperaturas[UB_CUALQUIERA].temp_tiempo = new_timestamp;
+        temperaturas[UB_CUALQUIERA].temp_ubicacion = "pasillo";
         // console.log("-Topico:" + topic + " -Temperatura:" + temperaturas[UB_PASILLO].temp_valor + " Tiempo:" + temperaturas[UB_PASILLO].temp_tiempo);
     }
 });
@@ -146,11 +155,6 @@ function peticion() {
             activeNodes = JSON.parse(body);
             if (activeNodes.length == 0 || !activeNodes[0].hasOwnProperty('repetido')) {
                 console.log('Bienvenido a la sala de chat');
-                rl = readline.createInterface({
-                    input: process.stdin,
-                    output: process.stdout
-                });
-                rl.on('line', rd_line); // Preparamos el evento para leer por teclado
                 // Limpiar array de nodos activos: borrar repetidos y viejos logins mios
                 activeNodes = limpiar_array(activeNodes);
                 for (var i = 0; i < activeNodes.length; i++) {
@@ -167,8 +171,8 @@ function peticion() {
 
                     client.on('data', (data) => {
                         var mensaje = JSON.parse(data.toString());
-                        analizarMensaje(mensaje);
                         mostrarMensaje(mensaje);
+                        analizarMensaje(mensaje);
                     });
 
                     client.on('end', function () { // El otro (servidor) o yo pone/puse exit: El nodo par me envía un FIN packet indicando que se desconectará
@@ -208,8 +212,8 @@ const server = net.createServer((socket) => {
             connections.set(mensaje.username, socket);
             console.log(mensaje.username + " se ha conectado.");
         } else {
-            analizarMensaje(mensaje);
             mostrarMensaje(mensaje);
+            analizarMensaje(mensaje);
         }
     });
 
@@ -240,66 +244,6 @@ server.on('close', () => { // Evento emitido cuando el servidor cierra y sólo s
 server.on('error', (err) => {
     console.log(err);
 });
-
-function rd_line(cad) {
-    var line = cad.split('@');
-    var to;
-    var mensaje = line[0];
-    for (var i = 1; i < line.length; i++) {
-        line[i] = line[i].replace(/\s+/g, '');
-    }
-    if (mensaje == "exit") {
-        flag_exit = true;
-        for (const socket of connections.values()) {
-            socket.end();
-        }
-        process.exit();
-    } else {
-        if (line.length == 1) { // El mensaje es a todos, no hubo un @
-            to = 'all';
-        } else {
-            to = '';
-            for (i = 1; i < line.length; i++) {
-                to += line[i] + ',';
-            }
-        }
-        var mensaje_completo = {
-            from: username,
-            to: to,
-            message: mensaje,
-            timestamp: Date.now(),
-            offset: offset
-        };
-
-        if (to == 'all') {
-            for (const socket of connections.values()) {
-                socket.write(JSON.stringify(mensaje_completo));
-            }
-            mostrarMensaje(mensaje_completo);
-        } else {
-            var i = 1;
-            var flag = true;
-            while (i < line.length && flag) {
-                var socket = connections.get(line[i]);
-                if (socket == undefined) {
-                    flag = false;
-                }
-                i++;
-            }
-            if (flag) {
-                i = 1;
-                while (i < line.length) {
-                    var socket = connections.get(line[i]);
-                    socket.write(JSON.stringify(mensaje_completo));
-                    i++
-                }
-                mostrarMensaje(mensaje_completo);
-            } else {
-                console.log("El usuario \"" + line[i - 1] + "\" no esta registrado en la sala de chat");
-            };
-        };
-    };
-};
 
 function detectar_pregunta(preg) {
     var preg_ret;
@@ -333,129 +277,75 @@ function detectar_pregunta(preg) {
 
 function analizarMensaje(mensaje) {
     receivers = mensaje.to.split(',');
-    if (receivers.includes('all') || receivers.includes(username) || mensaje.from == username) {
+    if (receivers.includes('all') || receivers.includes(username)) { // || mensaje.from == username) {
         pregunta = detectar_pregunta(mensaje.message);
         // Es una pregunta diriga hacia el chatbot
         if (pregunta) {
-            var mensaje_completo;
+            var msj;
             switch (pregunta) {
-                case 1: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Temperatura: ' + temperaturas[UB_CUALQUIERA].temp_valor + ' a las ' + temperaturas[UB_CUALQUIERA].temp_tiempo + " en " + temperaturas[UB_CUALQUIERA].temp_ubicacion,
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 1:
+                    msj = 'Temperatura: ' + temperaturas[UB_CUALQUIERA].temp_valor + ' a las ' + temperaturas[UB_CUALQUIERA].temp_tiempo + " en " + temperaturas[UB_CUALQUIERA].temp_ubicacion;
                     break;
-                case 2: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Temperatura: ' + temperaturas[UB_SALA4].temp_valor + ' a las ' + temperaturas[UB_SALA4].temp_tiempo + " en sala4",
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 2:
+                    msj = 'Temperatura: ' + temperaturas[UB_SALA4].temp_valor + ' a las ' + temperaturas[UB_SALA4].temp_tiempo + " en sala4";
                     break;
-                case 3: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Temperatura: ' + temperaturas[UB_EXTERIOR].temp_valor + ' a las ' + temperaturas[UB_EXTERIOR].temp_tiempo + " en exterior",
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 3:
+                    msj = 'Temperatura: ' + temperaturas[UB_EXTERIOR].temp_valor + ' a las ' + temperaturas[UB_EXTERIOR].temp_tiempo + " en exterior";
                     break;
-                case 4: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Temperatura: ' + temperaturas[UB_PASILLO].temp_valor + ' a las ' + temperaturas[UB_PASILLO].temp_tiempo + " en pasillo",
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 4:
+                    msj = 'Temperatura: ' + temperaturas[UB_PASILLO].temp_valor + ' a las ' + temperaturas[UB_PASILLO].temp_tiempo + " en pasillo";
                     break;
-                case 5: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led encendido en sala4.',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 5:
+                    msj = 'Led encendido en sala4.';
                     clientmqtt.publish(TOP_SALA4_LED, JSON.stringify({ valor: true, timestamp: Date.now() }));
                     break;
-                case 6: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led encendido en exterior.',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 6:
+                    msj = 'Led encendido en exterior.';
                     // Encender led en exterior
                     clientmqtt.publish(TOP_EXT_LED, JSON.stringify({ valor: true, timestamp: Date.now() }));
                     break;
-                case 7: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led encendido en pasillo.',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 7:
+                    msj: 'Led encendido en pasillo.';
                     // Encender led en pasillo
                     clientmqtt.publish(TOP_PAS_LED, JSON.stringify({ valor: true, timestamp: Date.now() }));
                     break;
-                case 8: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led apagado en sala4',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 8:
+                    msj = 'Led apagado en sala4';
                     // Apagar led en sala4
                     clientmqtt.publish(TOP_SALA4_LED, JSON.stringify({ valor: false, timestamp: Date.now() }));
                     break;
-                case 9: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led apagado en exterior',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 9:
+                    msj = 'Led apagado en exterior';
                     // Apagar led en exterior
                     clientmqtt.publish(TOP_EXT_LED, JSON.stringify({ valor: false, timestamp: Date.now() }));
                     break;
-                case 10: mensaje_completo = {
-                    from: username,
-                    to: 'all',
-                    message: 'Led apagado en pasillo',
-                    timestamp: Date.now(),
-                    offset: offset
-                };
+                case 10:
+                    msj = 'Led apagado en pasillo';
                     // Apagar led en pasillo
                     clientmqtt.publish(TOP_PAS_LED, JSON.stringify({ valor: false, timestamp: Date.now() }));
                     break;
                 case 11:
                     var grados = mensaje.message.split('a ');
-                    if (grados[1] >= 0 && grados[1] <= 360) {
-                        mensaje_completo = {
-                            from: username,
-                            to: 'all',
-                            message: 'Motor girado',
-                            timestamp: Date.now(),
-                            offset: offset
-                        };
+                    if (grados[1] >= 0 && grados[1] <= 180) {
+                        msj = 'Motor girado a ' + grados [1] + ' grados';
                         // Girar motor
                         clientmqtt.publish(TOP_SALA4_MOTOR, JSON.stringify({ valor: grados[1], timestamp: Date.now() }));
                     } else {
-                        mensaje_completo = {
-                            from: username,
-                            to: 'all',
-                            message: 'Grados incorrectos',
-                            timestamp: Date.now(),
-                            offset: offset
-                        };
+                        msj = 'Grados incorrectos.';
                     }
                     break;
             }
+            var mensaje_completo = {
+                from: username,
+                to: 'all',
+                message: msj,
+                timestamp: Date.now(),
+                offset: offset
+            };
             for (const socket of connections.values()) {
                 socket.write(JSON.stringify(mensaje_completo));
             }
+            mostrarMensaje(mensaje_completo);
         }
     }
 }

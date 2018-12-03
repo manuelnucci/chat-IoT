@@ -33,17 +33,17 @@ http.createServer((req, res) => {
         } else if (q.pathname == '/reload') {
             var i = 0;
             var tabla = `<table class='table table-dark' id="table">
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Username</th>
-                                                <th>Ip</th>
-                                                <th>Port</th>
-                                                <th>Login time</th>
-                                            </tr>`;
+                            <tr>
+                                <th>#</th>
+                                <th>Username</th>
+                                <th>Ip</th>
+                                <th>Port</th>
+                                <th>Login time</th>
+                            </tr>`;
             activeNodes.forEach((item) => {
                 tabla += "<tr><td>" + ++i + "</td><td>@" + item.username + "</td><td>" + item.ip + "</td><td>" + item.port + "</td><td>" + item.timestamp + "</td></tr>";
             });
-            tabla+='</table>';
+            tabla += '</table>';
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(tabla);
         } else {

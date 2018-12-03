@@ -66,21 +66,18 @@ void mqtt_logic(const char topic[], byte* payload, unsigned int length)
     StaticJsonBuffer<JSON_OBJECT_SIZE(2)> jb;
     JsonObject& message = jb.parseObject((char*) payload);
 
-    if (!strcmp(topic, ledTopic))
+    bool valor = message["valor"];
+    if (valor)
     {
-        bool valor = message["valor"];
-        if (valor)
-        {
-          Serial.print("Prender LED de ");
-          Serial.println(location);
-          digitalWrite(LED_BUILTIN, LOW);
-        }
-        else
-        {
-          Serial.print("Apagar LED de ");
-          Serial.println(location);
-          digitalWrite(LED_BUILTIN, HIGH);
-        }  
+      Serial.print("Prender LED de ");
+      Serial.println(location);
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    else
+    {
+      Serial.print("Apagar LED de ");
+      Serial.println(location);
+      digitalWrite(LED_BUILTIN, HIGH);
     }
 }
 
@@ -119,6 +116,6 @@ void publish_temperature()
     payload.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
  
     client.publish(temperatureTopic, JSONmessageBuffer, true);
-    
+
     delay(pause);
 }

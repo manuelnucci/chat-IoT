@@ -7,7 +7,7 @@ const events = require('events');
 const eventEmitter = new events.EventEmitter();
 
 const IP_ADDRESS = ip.address();
-const IP_HTTP_SERVER = '192.168.1.33';
+const IP_HTTP_SERVER = '10.9.10.206';
 const PORT_HTTP_SERVER = 8085;
 const PORT_TCP_SERVER = 8081;
 const PORT_TCP_CLIENT = 8083;

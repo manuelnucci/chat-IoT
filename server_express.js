@@ -36,13 +36,15 @@ app.get('/', (req, res) => {
                             <title>Registros de conexiones</title>
                             <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css' integrity='sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm' crossorigin='anonymous'>
                             <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'></script>
+                            <script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
                         </head>
                         <body id=body>
                             <div class='container-fluid'>
                                 <div class='row'>
                                     <div class='col text-center'>
                                         <h1 class='h1 mb-5 mt-3 text-center'>Registro de conexiones</h1>
-                                        <table class='table table-dark'>
+                                        <div id='tabla'>
+                                        <table class='table table-dark' id="table">
                                             <tr>
                                                 <th>#</th>
                                                 <th>Username</th>
@@ -52,17 +54,17 @@ app.get('/', (req, res) => {
                                             </tr>`;
     var i = 0;
     activeNodes.forEach((item) => {
-        html += "<div id='rows_update'><tr><td>" + ++i + "</td><td>@" + item.username + "</td><td>" + item.ip + "</td><td>" + item.port + "</td><td>" + item.timestamp + "</td></tr>";
+        html += "<tr><td>" + ++i + "</td><td>@" + item.username + "</td><td>" + item.ip + "</td><td>" + item.port + "</td><td>" + item.timestamp + "</td></tr>";
     });
-    html += `</div>
-                                </table>
+    html += `               </table>
+                                </div>
                             </div>
                         </div>  
                     </div>
                     <script>
-                        window.setInterval(function () {
+                        setInterval(function () {
                             $.get('http://${ip.address()}:${PORT_HTTP}/reload', function(data) {
-                                $("#body").html(data);
+                                $("#table").html(data);
                             });
                         },10000);
                     </script>
@@ -74,10 +76,18 @@ app.get('/', (req, res) => {
 
 app.get('/reload', (req, res) => {
     var i = 0;
-    var tabla = "";
+    var tabla = `<table class='table table-dark' id="table">
+                    <tr>
+                        <th>#</th>
+                        <th>Username</th>
+                        <th>Ip</th>
+                        <th>Port</th>
+                        <th>Login time</th>
+                    </tr>`;
     activeNodes.forEach((item) => {
         tabla += "<tr><td>" + ++i + "</td><td>@" + item.username + "</td><td>" + item.ip + "</td><td>" + item.port + "</td><td>" + item.timestamp + "</td></tr>";
     });
+    tabla += '</table>';
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(tabla);
 });
