@@ -30,9 +30,9 @@ const UB_EXTERIOR = 2;
 const UB_PASILLO = 3;
 
 var temperaturas = [{ temp_valor: "no registrada", temp_tiempo: "no registrada", temp_ubicacion: "no registrada" },
-    { temp_valor: "no registrada", temp_tiempo: "no registrada" },
-    { temp_valor: "no registrada", temp_tiempo: "no registrada" },
-    { temp_valor: "no registrada", temp_tiempo: "no registrada" }];
+{ temp_valor: "no registrada", temp_tiempo: "no registrada" },
+{ temp_valor: "no registrada", temp_tiempo: "no registrada" },
+{ temp_valor: "no registrada", temp_tiempo: "no registrada" }];
 
 var username = encodeURIComponent(readline_sync.question('Ingrese nombre de usuario: '));
 // var rl;
@@ -175,7 +175,7 @@ function peticion() {
                         analizarMensaje(mensaje);
                     });
 
-                    client.on('end', function () { // El otro (servidor) o yo pone/puse exit: El nodo par me envía un FIN packet indicando que se desconectará
+                    client.on('end', function() { // El otro (servidor) o yo pone/puse exit: El nodo par me envía un FIN packet indicando que se desconectará
                         if (flag_exit) {
                             console.log("Me desconecté de " + activeNodes[this.index].username);
                         } else {
@@ -188,7 +188,7 @@ function peticion() {
                         // La conexión TCP se cerró correctamente.
                     });
 
-                    client.on('error', function (err) {
+                    client.on('error', function(err) {
                         // console.log(err);
                         console.log("El cliente " + activeNodes[this.index].username + " se desconectó");
                         connections.delete(activeNodes[this.index].username);
@@ -205,7 +205,7 @@ function peticion() {
 
 const server = net.createServer((socket) => {
     var username;
-    socket.on('data', function (data) {
+    socket.on('data', function(data) {
         var mensaje = JSON.parse(data.toString());
         if (mensaje.hasOwnProperty('username')) { // No es un mensaje de chat de otro cliente, sino una notificacion
             username = mensaje.username;
@@ -217,7 +217,7 @@ const server = net.createServer((socket) => {
         }
     });
 
-    socket.on('end', function () { // El nodo par me envía un FIN packet indicando que se desconectará
+    socket.on('end', function() { // El nodo par me envía un FIN packet indicando que se desconectará
         if (flag_exit) {
             console.log("Me desconecté de " + username);
         } else {
@@ -327,7 +327,7 @@ function analizarMensaje(mensaje) {
                 case 11:
                     var grados = mensaje.message.split('a ');
                     if (grados[1] >= 0 && grados[1] <= 180) {
-                        msj = 'Motor girado a ' + grados [1] + ' grados';
+                        msj = 'Motor girado a ' + grados[1] + ' grados';
                         // Girar motor
                         clientmqtt.publish(TOP_SALA4_MOTOR, JSON.stringify({ valor: grados[1], timestamp: Date.now() }));
                     } else {
@@ -365,8 +365,8 @@ function msToTime(s) {
 }
 
 function limpiar_array(nodos_activos) {
-    nodos_activos = nodos_activos.filter(function (item, pos, array) {
-        var index = array.map(function (e) { return e.ip + e.port; }).lastIndexOf(item.ip + item.port);
+    nodos_activos = nodos_activos.filter(function(item, pos, array) {
+        var index = array.map(function(e) { return e.ip + e.port; }).lastIndexOf(item.ip + item.port);
         return index == pos;
     });
     var nodos_activos_ret = new Array();

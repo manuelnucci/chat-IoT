@@ -246,8 +246,8 @@ function limpiar_array(nodos_activos) {
         var index = array.map(function (e) { return e.ip + e.port; }).lastIndexOf(item.ip + item.port);
         return index == pos;
     });
-    var nodos_activos_ret= new Array();
-        var nodos_activos_ret = nodos_activos.filter((item) => {
+    var nodos_activos_ret = new Array();
+    var nodos_activos_ret = nodos_activos.filter((item) => {
         return !(item.ip == IP_ADDRESS && item.port == PORT_TCP_CLIENT);
     });
     return nodos_activos_ret;
